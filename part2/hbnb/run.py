@@ -1,4 +1,3 @@
-#task0
 # 6.Create the Entry Point
 from app import create_app
 

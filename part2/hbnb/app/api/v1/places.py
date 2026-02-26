@@ -28,6 +28,7 @@ place_model = api.model('Place', {
     'amenities': fields.List(fields.String, required=True, description="List of amenities ID's")
 })
 
+
 @api.route('/')
 class PlaceList(Resource):
     @api.expect(place_model)
@@ -65,6 +66,7 @@ class PlaceList(Resource):
             "owner_id": place.owner_id,
             "amenities": [amenity.id for amenity in place.amenities]
         } for place in places], 200
+
 
 @api.route('/<place_id>')
 class PlaceResource(Resource):

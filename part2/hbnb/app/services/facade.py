@@ -15,6 +15,7 @@ class HBnBFacade:
         self.amenity_repo = InMemoryRepository()
         print("FACADE INIT")
     # ===== USER METHODS =====
+
     def create_user(self, user_data):
         user = User(**user_data)
         self.user_repo.add(user)
@@ -126,9 +127,9 @@ class HBnBFacade:
                 raise ValueError("Invalid place_id: Place does not exist")
 
         self.review_repo.update(review_id, review_data)
-        
+
         updated_review = self.review_repo.get(review_id)
-        
+
         return updated_review
 
     def delete_review(self, review_id):
@@ -172,4 +173,3 @@ class HBnBFacade:
             amenity.name = amenity_data['name']
             amenity.updated_at = datetime.now()
         return amenity
-
