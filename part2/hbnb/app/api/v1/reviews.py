@@ -61,12 +61,12 @@ class ReviewResource(Resource):
     def put(self, review_id):
         """Update a review's information"""
         try:
-            updated_review = facade.updated_review(review_id, api.payload)
+            updated_review = facade.update_review(review_id, api.payload)
             if not updated_review:
                 return {'error': 'Review not found'}, 404
             return updated_review.to_dict(), 200
         except ValueError as err:
-            return {'error': 'Internal server errir'}, 500
+            return {'error': 'Internal server error'}, 500
 
     @api.response(200, 'Review deleted successfully')
     @api.response(404, 'Review not found')
