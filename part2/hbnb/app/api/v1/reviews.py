@@ -66,7 +66,7 @@ class ReviewResource(Resource):
                 return {'error': 'Review not found'}, 404
             return updated_review.to_dict(), 200
         except ValueError as err:
-            return {'error': 'Internal server error'}, 500
+            return {'error': str(err)}, 400
 
     @api.response(200, 'Review deleted successfully')
     @api.response(404, 'Review not found')
@@ -75,7 +75,7 @@ class ReviewResource(Resource):
         try:
             result = facade.delete_review(review_id)
             if not result:
-                return {'error': 'Review not found'}, 400
-            return {'Message': 'Review succesfully deleted'}, 200
+                return {'error': 'Review not found'}, 404
+            return {'message': 'Review successfully deleted'}, 200
         except Exception as err:
             return {'error': 'internal server error'}, 500

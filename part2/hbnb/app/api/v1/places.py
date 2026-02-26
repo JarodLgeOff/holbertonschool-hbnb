@@ -119,3 +119,20 @@ class PlaceResource(Resource):
             }, 200
         except Exception as e:
             return {"message": str(e)}, 400
+
+
+@api.route('/<place_id>/reviews')
+class PlaceReviewList(Resource):
+    @api.response(200, 'List of reviews for the place retrieved successfully')
+    @api.response(404, 'Place not found')
+    def get(self, place_id):
+        """Get all reviews for a specific place"""
+        try:
+            place = facade.get_place(place_id)
+            if not place:
+                return {'error': 'Place not found'}, 404
+
+            reviews = facade.get_reviews_by_place(place_id)
+            return [review.to_dict() for review in reviews], 200
+        except Exception as err:
+            return {'error': 'Internal server error'}, 500
