@@ -6,7 +6,7 @@ class User(BaseModel):
 
     def __init__(self, first_name, last_name, email):
         """Initialize a new User instance
-        
+
         Args:
             first_name: User's first name
             last_name: User's last name

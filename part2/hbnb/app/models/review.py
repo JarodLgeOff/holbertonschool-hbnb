@@ -6,7 +6,7 @@ class Review(BaseModel):
 
     def __init__(self, text, rating, place_id, user_id):
         """Initialize a new Review instance
-        
+
         Args:
             text: Review text content
             rating: Rating value (1-5)

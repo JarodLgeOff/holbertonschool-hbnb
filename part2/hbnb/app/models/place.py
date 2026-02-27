@@ -6,7 +6,7 @@ class Amenity(BaseModel):
 
     def __init__(self, name):
         """Initialize a new Amenity instance
-        
+
         Args:
             name: Name of the amenity
         """
