@@ -18,19 +18,24 @@ class UserList(Resource):
     @api.response(400, 'Invalid input data')
     def post(self):
         """Register a new user"""
-        user_data = api.payload
+        try:
+            user_data = api.payload
 
-        existing_user = facade.get_user_by_email(user_data['email'])
-        if existing_user:
-            return {'error': 'Email already registered'}, 400
+            existing_user = facade.get_user_by_email(user_data['email'])
+            if existing_user:
+                return {'error': 'Email already registered'}, 400
 
-        new_user = facade.create_user(user_data)
-        return {
-            'id': new_user.id, 
-            'first_name': new_user.first_name,
-            'last_name': new_user.last_name,
-            'email': new_user.email
-        }, 201
+            new_user = facade.create_user(user_data)
+            return {
+                'id': new_user.id, 
+                'first_name': new_user.first_name,
+                'last_name': new_user.last_name,
+                'email': new_user.email
+            }, 201
+        except ValueError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': 'Internal server error'}, 500
 
     @api.response(200, 'Users retrieved successfully')
     def get(self):
@@ -68,18 +73,23 @@ class UserResource(Resource):
     @api.response(404, 'User not found')
     def put(self, user_id):
         """Update user details by ID"""
-        user_data = api.payload
-        updated_user = facade.update_user(user_id, user_data)
+        try:
+            user_data = api.payload
+            updated_user = facade.update_user(user_id, user_data)
 
-        if not updated_user:
-            return {'error': 'User not found'}, 404
+            if not updated_user:
+                return {'error': 'User not found'}, 404
 
-        return {
-            'id': updated_user.id,
-            'first_name': updated_user.first_name,
-            'last_name': updated_user.last_name,
-            'email': updated_user.email
-        }, 200
+            return {
+                'id': updated_user.id,
+                'first_name': updated_user.first_name,
+                'last_name': updated_user.last_name,
+                'email': updated_user.email
+            }, 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': 'Internal server error'}, 500
 
     @api.response(204, 'User deleted successfully')
     @api.response(404, 'User not found')
