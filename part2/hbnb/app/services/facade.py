@@ -69,12 +69,65 @@ class HBnBFacade:
         return self.place_repo.get_all()
 
     def update_place(self, place_id, place_data):
+        """Update a place with proper validation"""
         place = self.place_repo.get(place_id)
         if not place:
             return None
+
+        # Validate that place_data is not empty
+        if not place_data:
+            raise ValueError("No data provided for update")
+
+        # Create a copy of current place data for validation
+        current_data = {
+            'title': place.title,
+            'description': place.description,
+            'price': place.price,
+            'latitude': place.latitude,
+            'longitude': place.longitude,
+            'owner_id': place.owner_id
+        }
+
+        # Update with new data
         for key, value in place_data.items():
-            if key not in ['id', 'created_at', 'updated_at']:
-                setattr(place, key, value)
+            if key in ['title', 'description', 'price', 'latitude', 'longitude', 'owner_id']:
+                current_data[key] = value
+
+        # Validate the updated data by creating a temporary Place instance
+        try:
+            temp_place = Place(
+                title=current_data['title'],
+                description=current_data['description'], 
+                price=current_data['price'],
+                latitude=current_data['latitude'],
+                longitude=current_data['longitude'],
+                owner_id=current_data['owner_id']
+            )
+
+            # If validation passed, update the existing place
+            place.title = temp_place.title
+            place.description = temp_place.description
+            place.price = temp_place.price
+            place.latitude = temp_place.latitude
+            place.longitude = temp_place.longitude
+            place.owner_id = temp_place.owner_id
+            place.updated_at = datetime.now()
+
+            # Handle amenities if provided
+            if 'amenities' in place_data:
+                amenities = []
+                for amenity_id in place_data['amenities']:
+                    amenity = self.amenity_repo.get(amenity_id)
+                    if amenity:
+                        amenities.append(amenity)
+                    else:
+                        raise ValueError(f"Amenity with ID {amenity_id} not found")
+                place.amenities = amenities
+
+        except (ValueError, TypeError) as e:
+            # Re-raise validation errors to be caught by API layer
+            raise e
+
         return place
     # ===== REVIEW METHODS =====
 
