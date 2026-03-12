@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_restx import Api
+#import config --> pas sur qu'il faille cet import car j'ai une erreur  is not accessed à voir
 
 def create_app(config_class="config.DeveloppementConfig"): #ajout de la fonction config_class="config.DeveloppementConfig"
     app = Flask(__name__)
