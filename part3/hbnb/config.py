@@ -8,7 +8,7 @@ class Config:
 class DevelopmentConfig(Config):
     """Developpement environnement configuration"""
     DEBUG = True
-    SQLALCHMEY_DATABSE_URI = 'sqlite:///developpement.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///developpement.db'
 
 config = {
     'development': DevelopmentConfig,
