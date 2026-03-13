@@ -20,7 +20,7 @@ def create_app(config_class="config.DevelopmentConfig"): #ajout de la fonction c
         version='1.0',
         title='HBnB API',
         description='HBnB Application API',
-        doc='' # modification du chemin de la documentation pour éviter les conflits avec les routes de l'API
+        doc='/' # modification du chemin de la documentation pour éviter les conflits avec les routes de l'API
         )
 
     from app.api.v1.users import api as users_ns            # j'ai déplacé car plus logique que ce soit a cette endroit du code, à voir 
