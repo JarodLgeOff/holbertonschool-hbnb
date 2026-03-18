@@ -1,14 +1,14 @@
 from app import db
 from app.models.BaseModel import BaseModel
- 
- 
+
+
 class Amenity(BaseModel):
     """Amenity model for place features (SQLAlchemy mapped)"""
     
     __tablename__ = 'amenities'
     
-    # SQLAlchemy columns
     name = db.Column(db.String(50), nullable=False, unique=True)
+    
     
     def __init__(self, name, **kwargs):
         """Initialize a new Amenity instance
@@ -16,7 +16,6 @@ class Amenity(BaseModel):
         Args:
             name: Name of the amenity
         """
-        # Validations
         if not isinstance(name, str):
             raise TypeError("name must be a string")
         
@@ -26,7 +25,6 @@ class Amenity(BaseModel):
         if not name.strip():
             raise ValueError("name cannot be empty")
         
-        # Set attributes (SQLAlchemy will handle id, created_at, updated_at via BaseModel)
         self.name = name.strip()
  
     def __str__(self):
