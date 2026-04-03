@@ -60,7 +60,15 @@ class User(BaseModel):
         """Verify a password against the stored hash"""
         if not self.password:
             return False
-        return bcrypt.check_password_hash(self.password, password)
+        try:
+            return bcrypt.check_password_hash(self.password, password)
+        except ValueError:
+            # Legacy plaintext value: allow one successful login then migrate.
+            if self.password == password:
+                self.hash_password(password)
+                self.save()
+                return True
+            return False
 
     def __str__(self):
         """String representation of the User object"""
