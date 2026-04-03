@@ -734,10 +734,18 @@ export async function deleteReviewAdmin(reviewId: string) {
     throw new Error("Vous devez etre connecte pour supprimer un avis.");
   }
 
-  return requestJson<{ message?: string }>(`/reviews/${reviewId}`, {
+  const response = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
     method: "DELETE",
-    headers: authHeaders(token),
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
   });
+
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Suppression de l'avis impossible (${response.status})`);
+  }
 }
 
 export async function deletePlaceAdmin(placeId: string) {
