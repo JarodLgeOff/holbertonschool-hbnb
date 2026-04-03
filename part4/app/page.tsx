@@ -20,45 +20,47 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPlaces, type Place } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 function HowItWorksDialog({ onExplore }: { onExplore: () => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <Button onClick={() => setOpen(true)} variant="outline" type="button">
-        Voir comment ça marche
+        {t("home.howItWorks")}
         <PlayCircle className="ml-2 h-4 w-4" />
       </Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Un parcours simple en trois étapes</DialogTitle>
+          <DialogTitle>{t("home.dialog.title")}</DialogTitle>
           <DialogDescription>
-            Hbnb est pensé pour aller vite, sans sacrifier le confort visuel ni la clarté.
+            {t("home.dialog.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="mt-6 space-y-4">
           <div className="rounded-2xl border border-border bg-muted/40 p-4">
-            <p className="font-medium">1. Explorer</p>
-            <p className="text-sm text-muted-foreground">Filtrez les lieux par pays et ouvrez une fiche détaillée.</p>
+            <p className="font-medium">{t("home.step1.title")}</p>
+            <p className="text-sm text-muted-foreground">{t("home.step1.description")}</p>
           </div>
           <div className="rounded-2xl border border-border bg-muted/40 p-4">
-            <p className="font-medium">2. Réserver</p>
-            <p className="text-sm text-muted-foreground">Connectez-vous et poursuivez votre expérience de réservation.</p>
+            <p className="font-medium">{t("home.step2.title")}</p>
+            <p className="text-sm text-muted-foreground">{t("home.step2.description")}</p>
           </div>
           <div className="rounded-2xl border border-border bg-muted/40 p-4">
-            <p className="font-medium">3. Partager</p>
-            <p className="text-sm text-muted-foreground">Déposez un avis après votre séjour et aidez la communauté.</p>
+            <p className="font-medium">{t("home.step3.title")}</p>
+            <p className="text-sm text-muted-foreground">{t("home.step3.description")}</p>
           </div>
         </div>
         <DialogFooter>
           <DialogCloseButton>
             <button className="inline-flex h-11 items-center justify-center rounded-full border border-border px-5 text-sm font-medium" type="button">
-              Fermer
+              {t("home.dialog.close")}
             </button>
           </DialogCloseButton>
           <Button onClick={() => { onExplore(); setOpen(false); }}>
-            Explorer maintenant
+            {t("home.dialog.exploreNow")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -67,6 +69,7 @@ function HowItWorksDialog({ onExplore }: { onExplore: () => void }) {
 }
 
 function PlacesCarousel() {
+  const { t } = useI18n();
   const router = useRouter();
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +83,7 @@ function PlacesCarousel() {
         const data = await getPlaces();
         setPlaces(data);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Impossible de charger les lieux");
+        setError(loadError instanceof Error ? loadError.message : t("home.loadError"));
       } finally {
         setLoading(false);
       }
@@ -116,19 +119,19 @@ function PlacesCarousel() {
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-2xl">
           <Badge className="rounded-full px-4 py-1.5" variant="soft">
-            Lieux créés
+            {t("home.carousel.badge")}
           </Badge>
-          <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">Les Hbnb disponible</h2>
+          <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{t("home.carousel.title")}</h2>
           <p className="mt-4 text-muted-foreground">
-            Fais défiler les cards pour découvrir rapidement chaque destination, puis ouvre la fiche complète.
+            {t("home.carousel.description")}
           </p>
         </div>
 
         <div className="flex items-center gap-3 self-start sm:self-auto">
-          <Button aria-label="Précédent" className="rounded-full" onClick={() => slide("left")} size="icon" type="button" variant="outline">
+          <Button aria-label={t("home.carousel.prev")} className="rounded-full" onClick={() => slide("left")} size="icon" type="button" variant="outline">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Button aria-label="Suivant" className="rounded-full" onClick={() => slide("right")} size="icon" type="button" variant="outline">
+          <Button aria-label={t("home.carousel.next")} className="rounded-full" onClick={() => slide("right")} size="icon" type="button" variant="outline">
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
@@ -175,7 +178,7 @@ function PlacesCarousel() {
                       </div>
                       <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{place.description}</p>
                       <Button onClick={() => handleViewPlace(place.id)} className="w-full">
-                        Voir le lieu
+                        {t("home.carousel.viewPlace")}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     </CardContent>
@@ -185,11 +188,11 @@ function PlacesCarousel() {
                   <CardContent className="flex flex-col items-center justify-center gap-4 p-5 text-center">
                     <div className="text-5xl">🏠</div>
                     <div>
-                      <h3 className="text-xl font-semibold tracking-tight">Tous les hbnb</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">Découvrez tous les lieux disponibles</p>
+                      <h3 className="text-xl font-semibold tracking-tight">{t("home.carousel.allTitle")}</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">{t("home.carousel.allDescription")}</p>
                     </div>
                     <Button onClick={handleExploreAll} className="w-full">
-                      Explorer tout
+                      {t("home.carousel.exploreAll")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </CardContent>
@@ -202,6 +205,7 @@ function PlacesCarousel() {
 }
 
 export default function HomePage() {
+  const { t } = useI18n();
   const router = useRouter();
 
   const handleExplore = () => {
@@ -212,20 +216,20 @@ export default function HomePage() {
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-4xl pt-10 text-center">
         <Badge className="rounded-full px-4 py-1.5 text-xs font-medium" variant="soft">
-          Plateforme de réservation nouvelle génération
+          {t("home.badge")}
         </Badge>
 
         <h1 className="mt-8 text-balance text-5xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-          Découvrez et réservez des lieux uniques partout dans le monde
+          {t("home.title")}
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
-          Hbnb vous permet de trouver, explorer et réserver des logements exceptionnels facilement.
+          {t("home.description")}
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button onClick={handleExplore} size="lg">
-            Explorer les lieux
+            {t("home.explorePlaces")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           <HowItWorksDialog onExplore={handleExplore} />

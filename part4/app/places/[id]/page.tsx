@@ -12,9 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPlace, type Place } from "@/lib/api";
 import { hasToken } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { ReviewCard } from "@/components/ReviewCard";
 
 export default function PlaceDetailsPage() {
+  const { t } = useI18n();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [place, setPlace] = useState<Place | null>(null);
@@ -33,7 +35,7 @@ export default function PlaceDetailsPage() {
         const data = await getPlace(params.id);
         setPlace(data);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Impossible de charger ce lieu");
+        setError(loadError instanceof Error ? loadError.message : t("placeDetails.loadError"));
       } finally {
         setLoading(false);
       }
@@ -64,7 +66,7 @@ export default function PlaceDetailsPage() {
   }
 
   if (!place) {
-    return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-muted-foreground">Lieu introuvable.</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-muted-foreground">{t("placeDetails.notFound")}</div>;
   }
 
   return (
@@ -83,7 +85,7 @@ export default function PlaceDetailsPage() {
 
         <Button asChild>
           <Link href={`/places/${place.id}/review`}>
-            Ajouter un avis
+            {t("placeDetails.addReview")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -103,8 +105,8 @@ export default function PlaceDetailsPage() {
         <div className="space-y-6 rounded-[2rem] border border-border bg-card/80 p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Prix</p>
-              <p className="text-3xl font-semibold">{place.price} € / nuit</p>
+              <p className="text-sm text-muted-foreground">{t("placeDetails.price")}</p>
+              <p className="text-3xl font-semibold">{place.price} €{t("placeDetails.perNight")}</p>
             </div>
             <Badge variant="soft">{place.rating} <Star className="ml-1 h-3.5 w-3.5" /></Badge>
           </div>
@@ -112,7 +114,7 @@ export default function PlaceDetailsPage() {
           <p className="text-base leading-8 text-muted-foreground">{place.description}</p>
 
           <div>
-            <p className="mb-3 text-sm font-medium text-foreground">Amenities</p>
+            <p className="mb-3 text-sm font-medium text-foreground">{t("placeDetails.amenities")}</p>
             {place.amenities.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {place.amenities.map((amenity) => (
@@ -122,7 +124,7 @@ export default function PlaceDetailsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Aucune amenity ajoutée pour ce lieu.</p>
+              <p className="text-sm text-muted-foreground">{t("placeDetails.noAmenity")}</p>
             )}
           </div>
         </div>
@@ -131,15 +133,15 @@ export default function PlaceDetailsPage() {
       <section className="mt-12 space-y-6">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Avis</h2>
-            <p className="text-muted-foreground">Retours récents de voyageurs ayant séjourné ici.</p>
+            <h2 className="text-2xl font-semibold tracking-tight">{t("placeDetails.reviews")}</h2>
+            <p className="text-muted-foreground">{t("placeDetails.reviewsDescription")}</p>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {place.reviews.length > 0 ? place.reviews.map((review) => <ReviewCard key={review.id} review={review} />) : (
             <Card className="border-border/70 bg-card/80">
-              <CardContent className="p-6 text-muted-foreground">Aucun avis pour l’instant.</CardContent>
+              <CardContent className="p-6 text-muted-foreground">{t("placeDetails.noReviews")}</CardContent>
             </Card>
           )}
         </div>

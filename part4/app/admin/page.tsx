@@ -21,8 +21,10 @@ import {
 import { hasToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useI18n } from "@/lib/i18n";
 
 export default function AdminPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -52,14 +54,14 @@ export default function AdminPage() {
         const currentUser = await getCurrentUser();
 
         if (!currentUser?.isAdmin) {
-          toast.error("Acces reserve aux administrateurs");
+          toast.error(t("admin.accessDenied"));
           router.replace("/places");
           return;
         }
 
         await loadData();
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Impossible de charger le panel admin";
+        const message = error instanceof Error ? error.message : t("admin.loadError");
         toast.error(message);
       } finally {
         setLoading(false);
@@ -72,10 +74,10 @@ export default function AdminPage() {
   const handleToggleAdmin = async (user: AdminUser) => {
     try {
       await updateUserAdmin(user.id, { isAdmin: !user.isAdmin });
-      toast.success("Role admin mis a jour");
+      toast.success(t("admin.toggleSuccess"));
       await loadData();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Mise a jour impossible";
+      const message = error instanceof Error ? error.message : t("admin.toggleError");
       toast.error(message);
     }
   };
@@ -83,10 +85,10 @@ export default function AdminPage() {
   const handleDeleteUser = async (userId: string) => {
     try {
       await deleteUserAdmin(userId);
-      toast.success("Utilisateur supprime");
+      toast.success(t("admin.userDeleteSuccess"));
       await loadData();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Suppression impossible";
+      const message = error instanceof Error ? error.message : t("admin.userDeleteError");
       toast.error(message);
     }
   };
@@ -94,10 +96,10 @@ export default function AdminPage() {
   const handleDeletePlace = async (placeId: string) => {
     try {
       await deletePlaceAdmin(placeId);
-      toast.success("Lieu supprime");
+      toast.success(t("admin.placeDeleteSuccess"));
       await loadData();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Suppression du lieu impossible";
+      const message = error instanceof Error ? error.message : t("admin.placeDeleteError");
       toast.error(message);
     }
   };
@@ -105,10 +107,10 @@ export default function AdminPage() {
   const handleDeleteReview = async (reviewId: string) => {
     try {
       await deleteReviewAdmin(reviewId);
-      toast.success("Avis supprime");
+      toast.success(t("admin.reviewDeleteSuccess"));
       await loadData();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Suppression de l'avis impossible";
+      const message = error instanceof Error ? error.message : t("admin.reviewDeleteError");
       toast.error(message);
     }
   };
@@ -116,7 +118,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <p>Chargement du panel admin...</p>
+        <p>{t("admin.loading")}</p>
       </div>
     );
   }
@@ -125,18 +127,18 @@ export default function AdminPage() {
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Administration</p>
-          <h1 className="text-4xl font-semibold tracking-tight">Panel Admin</h1>
-          <p className="mt-2 text-muted-foreground">Gerez les utilisateurs, lieux et avis depuis un seul espace.</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">{t("admin.badge")}</p>
+          <h1 className="text-4xl font-semibold tracking-tight">{t("admin.title")}</h1>
+          <p className="mt-2 text-muted-foreground">{t("admin.description")}</p>
         </div>
         <Button asChild variant="outline">
-          <Link href="/places">Retour aux lieux</Link>
+          <Link href="/places">{t("admin.backToPlaces")}</Link>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Utilisateurs ({users.length})</CardTitle>
+          <CardTitle>{t("admin.users")} ({users.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {users.map((user) => (
@@ -147,10 +149,10 @@ export default function AdminPage() {
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => handleToggleAdmin(user)}>
-                  {user.isAdmin ? "Retirer admin" : "Rendre admin"}
+                  {user.isAdmin ? t("admin.removeAdmin") : t("admin.makeAdmin")}
                 </Button>
                 <Button type="button" variant="outline" className="text-red-600" onClick={() => handleDeleteUser(user.id)}>
-                  Supprimer
+                  {t("admin.delete")}
                 </Button>
               </div>
             </div>
@@ -160,7 +162,7 @@ export default function AdminPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lieux ({places.length})</CardTitle>
+          <CardTitle>{t("admin.places")} ({places.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {places.map((place) => (
@@ -168,14 +170,14 @@ export default function AdminPage() {
               <div>
                 <p className="font-medium">{place.name}</p>
                 <p className="text-sm text-muted-foreground">{place.location ?? `${place.city}, ${place.country}`}</p>
-                <p className="text-sm">Prix: {place.price} EUR</p>
+                <p className="text-sm">{t("admin.price")}: {place.price} EUR</p>
               </div>
               <div className="flex gap-2">
                 <Button asChild type="button" variant="outline">
-                  <Link href={`/places/manage?id=${place.id}`}>Modifier</Link>
+                  <Link href={`/places/manage?id=${place.id}`}>{t("admin.edit")}</Link>
                 </Button>
                 <Button type="button" variant="outline" className="text-red-600" onClick={() => handleDeletePlace(place.id)}>
-                  Supprimer
+                  {t("admin.delete")}
                 </Button>
               </div>
             </div>
@@ -185,18 +187,18 @@ export default function AdminPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Avis ({reviews.length})</CardTitle>
+          <CardTitle>{t("admin.reviews")} ({reviews.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {reviews.map((review) => (
             <div key={review.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
               <div>
-                <p className="font-medium">Note: {review.rating}/5</p>
-                <p className="text-sm text-muted-foreground">{review.text || "(Sans commentaire)"}</p>
-                <p className="text-xs text-muted-foreground">Place: {review.placeId} | User: {review.userId}</p>
+                <p className="font-medium">{t("admin.rating")}: {review.rating}/5</p>
+                <p className="text-sm text-muted-foreground">{review.text || t("admin.noComment")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.placeLabel")}: {review.placeId} | {t("admin.userLabel")}: {review.userId}</p>
               </div>
               <Button type="button" variant="outline" className="text-red-600" onClick={() => handleDeleteReview(review.id)}>
-                Supprimer
+                {t("admin.delete")}
               </Button>
             </div>
           ))}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -15,17 +15,25 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { login, getCurrentUser } from "@/lib/api";
 import { hasToken, setToken, setUserInfo } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { dispatchAuthChange } from "@/lib/useAuth";
 
-const loginSchema = z.object({
-  email: z.string().email("Veuillez saisir une adresse email valide"),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
+type LoginValues = {
+  email: string;
+  password: string;
+};
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t, language } = useI18n();
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t("validation.email")),
+        password: z.string().min(6, t("validation.passwordMin")),
+      }),
+    [language, t]
+  );
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -45,19 +53,17 @@ export default function LoginPage() {
       const response = await login(values);
       setToken(response.token);
 
-      // Récupérer les infos utilisateur
       const user = await getCurrentUser();
       if (user) {
         setUserInfo(user.firstName, user.lastName, user.email || values.email, user.isAdmin);
       }
 
-      // Notifier les composants du changement d'authentification
       dispatchAuthChange();
 
-      toast.success("Connexion réussie");
+      toast.success(t("login.success"));
       router.push("/places");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "La connexion a échoué";
+      const message = error instanceof Error ? error.message : t("login.failure");
       toast.error(message);
     }
   };
@@ -65,7 +71,7 @@ export default function LoginPage() {
   return (
     <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center px-4 py-16 sm:px-6 lg:px-8">
       <Link
-        aria-label="Retour à l'accueil"
+        aria-label={t("auth.backHome")}
         className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted sm:left-4 sm:top-4"
         href="/"
       >
@@ -74,8 +80,8 @@ export default function LoginPage() {
 
       <Card className="w-full border-border/70 bg-card/80 shadow-xl shadow-black/5">
         <CardHeader className="space-y-3 text-center">
-          <CardTitle className="text-3xl tracking-tight">Connexion</CardTitle>
-          <CardDescription>Accédez à vos lieux favoris et poursuivez votre réservation.</CardDescription>
+          <CardTitle className="text-3xl tracking-tight">{t("login.title")}</CardTitle>
+          <CardDescription>{t("login.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -85,9 +91,9 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("login.email")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="vous@hbnb.com" type="email" {...field} />
+                      <Input placeholder={t("profile.placeholderEmail")} type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -99,7 +105,7 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mot de passe</FormLabel>
+                    <FormLabel>{t("login.password")}</FormLabel>
                     <FormControl>
                       <Input placeholder="••••••••" type="password" {...field} />
                     </FormControl>
@@ -109,13 +115,13 @@ export default function LoginPage() {
               />
 
               <Button className="w-full" type="submit">
-                Se connecter
+                {t("login.submit")}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                Pas encore inscrit ?{" "}
+                {t("login.noAccount")} {" "}
                 <a className="font-medium text-foreground underline-offset-4 hover:underline" href="/register">
-                  S'inscrire
+                  {t("login.signup")}
                 </a>
               </p>
             </form>

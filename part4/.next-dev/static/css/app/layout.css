@@ -930,6 +930,9 @@ video {
 .w-full {
   width: 100%;
 }
+.w-\[110px\] {
+  width: 110px;
+}
 .min-w-\[85\%\] {
   min-width: 85%;
 }

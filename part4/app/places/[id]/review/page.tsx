@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -14,17 +15,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { createReview } from "@/lib/api";
 import { hasToken } from "@/lib/auth";
-
-const reviewSchema = z.object({
-  rating: z.coerce.number().min(1).max(5),
-  comment: z.string().min(10, "Votre commentaire doit contenir au moins 10 caractères"),
-});
-
-type ReviewValues = z.infer<typeof reviewSchema>;
+import { useI18n } from "@/lib/i18n";
+type ReviewValues = {
+  rating: number;
+  comment: string;
+};
 
 export default function ReviewPage() {
+  const { t, language } = useI18n();
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const reviewSchema = useMemo(
+    () =>
+      z.object({
+        rating: z.coerce.number().min(1).max(5),
+        comment: z.string().min(10, t("review.validation.commentMin")),
+      }),
+    [language, t]
+  );
   const form = useForm<ReviewValues>({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
@@ -42,10 +50,10 @@ export default function ReviewPage() {
   const onSubmit = async (values: ReviewValues) => {
     try {
       await createReview(params.id, values);
-      toast.success("Avis publié");
+      toast.success(t("review.success"));
       router.push(`/places/${params.id}`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Impossible d'enregistrer votre avis";
+      const message = error instanceof Error ? error.message : t("review.failure");
       toast.error(message);
     }
   };
@@ -54,8 +62,8 @@ export default function ReviewPage() {
     <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-2xl items-center px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full border-border/70 bg-card/80 shadow-xl shadow-black/5">
         <CardHeader className="space-y-3">
-          <CardTitle className="text-3xl tracking-tight">Ajouter un avis</CardTitle>
-          <CardDescription>Partagez une note et un commentaire sur votre expérience.</CardDescription>
+          <CardTitle className="text-3xl tracking-tight">{t("review.title")}</CardTitle>
+          <CardDescription>{t("review.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -65,11 +73,11 @@ export default function ReviewPage() {
                 name="rating"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Note</FormLabel>
+                    <FormLabel>{t("review.rating")}</FormLabel>
                     <Select onValueChange={field.onChange} value={String(field.value)}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Choisissez une note" />
+                          <SelectValue placeholder={t("review.ratingPlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -90,9 +98,9 @@ export default function ReviewPage() {
                 name="comment"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Commentaire</FormLabel>
+                    <FormLabel>{t("review.comment")}</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Décrivez votre séjour..." {...field} />
+                      <Textarea placeholder={t("review.commentPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -100,7 +108,7 @@ export default function ReviewPage() {
               />
 
               <Button className="w-full" type="submit">
-                Publier l'avis
+                {t("review.submit")}
               </Button>
             </form>
           </Form>

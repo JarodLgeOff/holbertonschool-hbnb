@@ -10,9 +10,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { getCountries, getPlaces, type Place } from "@/lib/api";
 import { hasToken } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { PlaceCard } from "@/components/PlaceCard";
 
 export default function PlacesPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [places, setPlaces] = useState<Place[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,7 +34,7 @@ export default function PlacesPage() {
         const data = await getPlaces();
         setPlaces(data);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Impossible de charger les lieux");
+        setError(loadError instanceof Error ? loadError.message : t("home.loadError"));
       } finally {
         setLoading(false);
       }
@@ -64,35 +66,35 @@ export default function PlacesPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl space-y-3">
           <Badge className="rounded-full px-4 py-1.5" variant="soft">
-            Catalogue
+            {t("places.badge")}
           </Badge>
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Choisissez un lieu qui vous ressemble</h1>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{t("places.title")}</h1>
           <p className="text-lg leading-8 text-muted-foreground">
-            Explorez une sélection de logements premium, puis filtrez par pays pour affiner la recherche.
+            {t("places.description")}
           </p>
         </div>
 
         <div className="w-full max-w-xs space-y-4">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Rechercher un lieu</p>
+            <p className="text-sm font-medium text-muted-foreground">{t("places.searchLabel")}</p>
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-10"
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Nom, ville, pays..."
+                placeholder={t("places.searchPlaceholder")}
                 value={searchQuery}
               />
             </div>
           </div>
 
-          <p className="text-sm font-medium text-muted-foreground">Filtrer par pays</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("places.filterLabel")}</p>
           <Select onValueChange={setSelectedCountry} value={selectedCountry}>
             <SelectTrigger>
-              <SelectValue placeholder="Tous les pays" />
+              <SelectValue placeholder={t("places.allCountries")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les pays</SelectItem>
+              <SelectItem value="all">{t("places.allCountries")}</SelectItem>
               {countries.map((country: string) => (
                 <SelectItem key={country} value={country}>
                   {country}
@@ -106,7 +108,7 @@ export default function PlacesPage() {
       {error ? (
         <Card className="mt-10 border-destructive/30 bg-destructive/5">
           <CardHeader>
-            <CardTitle className="text-destructive">Erreur de chargement</CardTitle>
+            <CardTitle className="text-destructive">{t("places.loadingError")}</CardTitle>
           </CardHeader>
           <CardContent>{error}</CardContent>
         </Card>
@@ -130,7 +132,7 @@ export default function PlacesPage() {
 
       {!loading && filteredPlaces.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-border bg-card/80 p-8 text-center text-muted-foreground">
-          Aucun lieu ne correspond à ce filtre.
+          {t("places.empty")}
         </div>
       ) : null}
     </div>
