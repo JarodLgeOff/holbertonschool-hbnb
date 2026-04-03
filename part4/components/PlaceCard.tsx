@@ -8,12 +8,14 @@ import type { Place } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useI18n } from "@/lib/i18n";
 
 type PlaceCardProps = {
   place: Place;
 };
 
 export function PlaceCard({ place }: PlaceCardProps) {
+  const { t } = useI18n();
   const router = useRouter();
 
   const handleViewPlace = () => {
@@ -60,7 +62,7 @@ export function PlaceCard({ place }: PlaceCardProps) {
         </div>
 
         <Button onClick={handleViewPlace} className="w-full">
-          Voir le lieu
+          {t("placeCard.view")}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardContent>

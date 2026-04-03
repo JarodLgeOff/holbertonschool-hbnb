@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -15,24 +15,35 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { register } from "@/lib/api";
 import { hasToken } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 
-const registerSchema = z
-  .object({
-    firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
-    lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-    email: z.string().email("Veuillez saisir une adresse email valide"),
-    password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
-    confirmPassword: z.string().min(6, "Veuillez confirmer le mot de passe"),
-  })
-  .refine((values) => values.password === values.confirmPassword, {
-    message: "Les mots de passe ne correspondent pas",
-    path: ["confirmPassword"],
-  });
-
-type RegisterValues = z.infer<typeof registerSchema>;
+type RegisterValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t, language } = useI18n();
+  const registerSchema = useMemo(
+    () =>
+      z
+        .object({
+          firstName: z.string().min(2, t("validation.firstNameMin")),
+          lastName: z.string().min(2, t("validation.lastNameMin")),
+          email: z.string().email(t("validation.email")),
+          password: z.string().min(6, t("validation.passwordMin")),
+          confirmPassword: z.string().min(6, t("validation.confirmPasswordMin")),
+        })
+        .refine((values) => values.password === values.confirmPassword, {
+          message: t("validation.passwordMismatch"),
+          path: ["confirmPassword"],
+        }),
+    [language, t]
+  );
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -59,10 +70,10 @@ export default function RegisterPage() {
         password: values.password,
       });
 
-      toast.success("Compte créé avec succès");
+      toast.success(t("register.success"));
       router.push("/login");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "L'inscription a échoué";
+      const message = error instanceof Error ? error.message : t("register.failure");
       toast.error(message);
     }
   };
@@ -70,7 +81,7 @@ export default function RegisterPage() {
   return (
     <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center px-4 py-16 sm:px-6 lg:px-8">
       <Link
-        aria-label="Retour à l'accueil"
+        aria-label={t("auth.backHome")}
         className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted sm:left-4 sm:top-4"
         href="/"
       >
@@ -79,8 +90,8 @@ export default function RegisterPage() {
 
       <Card className="w-full border-border/70 bg-card/80 shadow-xl shadow-black/5">
         <CardHeader className="space-y-3 text-center">
-          <CardTitle className="text-3xl tracking-tight">S'inscrire</CardTitle>
-          <CardDescription>Créez votre compte pour découvrir et réserver vos prochains séjours.</CardDescription>
+          <CardTitle className="text-3xl tracking-tight">{t("register.title")}</CardTitle>
+          <CardDescription>{t("register.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -91,9 +102,9 @@ export default function RegisterPage() {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Prénom</FormLabel>
+                      <FormLabel>{t("register.firstName")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Jean" {...field} />
+                        <Input placeholder={t("profile.placeholderFirstName")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -105,9 +116,9 @@ export default function RegisterPage() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nom</FormLabel>
+                      <FormLabel>{t("register.lastName")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Dupont" {...field} />
+                        <Input placeholder={t("profile.placeholderLastName")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -120,9 +131,9 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("register.email")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="vous@hbnb.com" type="email" {...field} />
+                      <Input placeholder={t("profile.placeholderEmail")} type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -134,7 +145,7 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mot de passe</FormLabel>
+                    <FormLabel>{t("register.password")}</FormLabel>
                     <FormControl>
                       <Input placeholder="••••••••" type="password" {...field} />
                     </FormControl>
@@ -148,7 +159,7 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirmer le mot de passe</FormLabel>
+                    <FormLabel>{t("register.confirmPassword")}</FormLabel>
                     <FormControl>
                       <Input placeholder="••••••••" type="password" {...field} />
                     </FormControl>
@@ -158,15 +169,15 @@ export default function RegisterPage() {
               />
 
               <Button className="w-full" type="submit">
-                Créer mon compte
+                {t("register.submit")}
               </Button>
             </form>
           </Form>
 
           <p className="mt-5 text-center text-sm text-muted-foreground">
-            Déjà un compte ?{" "}
+            {t("register.hasAccount")} {" "}
             <Link className="font-medium text-foreground underline-offset-4 hover:underline" href="/login">
-              Se connecter
+              {t("register.login")}
             </Link>
           </p>
         </CardContent>

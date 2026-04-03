@@ -7,6 +7,7 @@ import { ArrowRight, LogOut, Menu, MoonStar, SunMedium } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +15,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { getToken, clearToken, clearUserInfo } from "@/lib/auth";
+import { clearToken, clearUserInfo } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
+import type { Language } from "@/lib/i18n-data";
 import { useAuth, dispatchAuthChange } from "@/lib/useAuth";
 
 function ThemeToggle() {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -45,15 +49,32 @@ function ThemeToggle() {
   }
 
   return (
-    <Button aria-label="Changer le thème" className="rounded-full" size="icon" variant="outline" onClick={toggleTheme} type="button">
+    <Button aria-label={t("navbar.theme")} className="rounded-full" size="icon" variant="outline" onClick={toggleTheme} type="button">
       {isDark ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
     </Button>
+  );
+}
+
+function LanguageSelector({ compact = false }: { compact?: boolean }) {
+  const { language, setLanguage, t } = useI18n();
+
+  return (
+    <Select onValueChange={(value) => setLanguage(value as Language)} value={language}>
+      <SelectTrigger aria-label={t("navbar.menu")} className={compact ? "h-10 w-full rounded-full" : "h-10 w-[110px] rounded-full"}>
+        <SelectValue placeholder={t("navbar.language")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="fr">{t("navbar.french")}</SelectItem>
+        <SelectItem value="en">{t("navbar.english")}</SelectItem>
+      </SelectContent>
+    </Select>
   );
 }
 
 function UserMenu({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
   const { fullName, mounted } = useAuth();
+  const { t } = useI18n();
 
   if (!mounted) {
     return null;
@@ -79,16 +100,16 @@ function UserMenu({ isAdmin }: { isAdmin: boolean }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/profile")} className="cursor-pointer">
-          Profil
+          {t("navbar.profile")}
         </DropdownMenuItem>
         {isAdmin && (
           <DropdownMenuItem onClick={() => router.push("/admin")} className="cursor-pointer">
-            Admin
+            {t("navbar.admin")}
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" />
-          Déconnexion
+          {t("navbar.logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -98,6 +119,7 @@ function UserMenu({ isAdmin }: { isAdmin: boolean }) {
 function MobileUserActions({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
   const { fullName, mounted } = useAuth();
+  const { t } = useI18n();
 
   if (!mounted) {
     return null;
@@ -114,16 +136,16 @@ function MobileUserActions({ isAdmin }: { isAdmin: boolean }) {
     <div className="space-y-3 rounded-2xl border border-border bg-background p-4">
       <div className="text-sm text-muted-foreground">{fullName}</div>
       <Button asChild variant="outline" className="w-full justify-start">
-        <Link href="/profile" onClick={() => router.push("/profile")}>Profil</Link>
+        <Link href="/profile" onClick={() => router.push("/profile")}>{t("navbar.profile")}</Link>
       </Button>
       {isAdmin && (
         <Button asChild variant="outline" className="w-full justify-start">
-          <Link href="/admin" onClick={() => router.push("/admin")}>Admin</Link>
+          <Link href="/admin" onClick={() => router.push("/admin")}>{t("navbar.admin")}</Link>
         </Button>
       )}
       <Button type="button" variant="outline" className="w-full justify-start text-destructive" onClick={handleLogout}>
         <LogOut className="mr-2 h-4 w-4" />
-        Déconnexion
+        {t("navbar.logout")}
       </Button>
     </div>
   );
@@ -133,6 +155,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated, isAdmin, mounted } = useAuth();
+  const { t } = useI18n();
 
   if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
     return null;
@@ -145,32 +168,31 @@ export function Navbar() {
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-sm">
             H
           </span>
-          <span>Hbnb</span>
+          <span>{t("navbar.brand")}</span>
         </Link>
 
-
-
         <div className="hidden items-center gap-3 md:flex">
+          <LanguageSelector />
           <ThemeToggle />
           {mounted && (
             isAuthenticated ? (
               <>
                 <Button asChild variant="outline">
-                  <Link href="/places/manage">Mes lieux</Link>
+                  <Link href="/places/manage">{t("navbar.managePlaces")}</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href="/places">Les lieux</Link>
+                  <Link href="/places">{t("navbar.places")}</Link>
                 </Button>
                 <UserMenu isAdmin={isAdmin} />
               </>
             ) : (
               <>
                 <Button asChild variant="outline">
-                  <Link href="/login">Connexion</Link>
+                  <Link href="/login">{t("navbar.login")}</Link>
                 </Button>
                 <Button asChild>
                   <Link href="/register">
-                    Commencer
+                    {t("navbar.start")}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -180,16 +202,17 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
+          <LanguageSelector compact />
           <ThemeToggle />
           <Sheet onOpenChange={setMobileOpen} open={mobileOpen}>
             <SheetTrigger asChild>
-              <Button aria-label="Ouvrir le menu" className="rounded-full" size="icon" variant="outline" type="button">
+              <Button aria-label={t("navbar.menu")} className="rounded-full" size="icon" variant="outline" type="button">
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
             <SheetContent className="flex flex-col gap-8" side="right">
               <SheetHeader>
-                <SheetTitle>Hbnb</SheetTitle>
+                <SheetTitle>{t("navbar.brand")}</SheetTitle>
               </SheetHeader>
 
               <div className="mt-auto flex flex-col gap-3">
@@ -198,26 +221,27 @@ export function Navbar() {
                     <>
                       <Button asChild variant="outline" className="w-full">
                         <Link href="/places/manage" onClick={() => setMobileOpen(false)}>
-                          Mes lieux
+                          {t("navbar.managePlaces")}
                         </Link>
                       </Button>
                       <Button asChild variant="outline" className="w-full">
                         <Link href="/places" onClick={() => setMobileOpen(false)}>
-                          Les lieux
+                          {t("navbar.places")}
                         </Link>
                       </Button>
+                      <LanguageSelector compact />
                       <MobileUserActions isAdmin={isAdmin} />
                     </>
                   ) : (
                     <>
                       <Button asChild variant="outline">
                         <Link href="/login" onClick={() => setMobileOpen(false)}>
-                          Connexion
+                          {t("navbar.login")}
                         </Link>
                       </Button>
                       <Button asChild>
                         <Link href="/register" onClick={() => setMobileOpen(false)}>
-                          Commencer
+                          {t("navbar.start")}
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                       </Button>

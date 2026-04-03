@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,28 +32,33 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { MapPin, Edit2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
-const placeSchema = z.object({
-  title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
-  description: z
-    .string()
-    .min(10, "La description doit contenir au moins 10 caractères"),
-  price: z.coerce.number().positive("Le prix doit être positif"),
-  latitude: z.coerce
-    .number()
-    .min(-90, "Latitude invalide")
-    .max(90, "Latitude invalide"),
-  longitude: z.coerce
-    .number()
-    .min(-180, "Longitude invalide")
-    .max(180, "Longitude invalide"),
-  location: z.string().min(2, "Le lieu doit contenir au moins 2 caractères"),
-  imageUrl: z.string().url("URL d'image invalide"),
-});
+type PlaceFormData = {
+  title: string;
+  description: string;
+  price: number;
+  latitude: number;
+  longitude: number;
+  location: string;
+  imageUrlsText: string;
+};
 
-type PlaceFormData = z.infer<typeof placeSchema>;
+function parseImageUrlsText(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function formatImageUrlsText(gallery: string[] | undefined, fallbackImage?: string) {
+  const candidates = gallery && gallery.length > 0 ? gallery : fallbackImage ? [fallbackImage] : [];
+  const unique = Array.from(new Set(candidates.map((url) => url.trim()).filter(Boolean)));
+  return unique.join("\n");
+}
 
 export default function ManagePlacesPage() {
+  const { t, language } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const editingPlaceId = searchParams?.get("id") ?? null;
@@ -65,6 +70,34 @@ export default function ManagePlacesPage() {
   const [activePlace, setActivePlace] = useState<Place | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const placeSchema = useMemo(
+    () =>
+      z.object({
+        title: z.string().min(3, t("manage.validation.titleMin")),
+        description: z
+          .string()
+          .min(10, t("manage.validation.descriptionMin")),
+        price: z.coerce.number().positive(t("manage.validation.pricePositive")),
+        latitude: z.coerce
+          .number()
+          .min(-90, t("manage.validation.latitudeInvalid"))
+          .max(90, t("manage.validation.latitudeInvalid")),
+        longitude: z.coerce
+          .number()
+          .min(-180, t("manage.validation.longitudeInvalid"))
+          .max(180, t("manage.validation.longitudeInvalid")),
+        location: z.string().min(2, t("manage.validation.locationMin")),
+        imageUrlsText: z
+          .string()
+          .refine((value) => parseImageUrlsText(value).length > 0, t("manage.validation.imagesRequired"))
+          .refine(
+            (value) => parseImageUrlsText(value).every((url) => /^https?:\/\//i.test(url)),
+            t("manage.validation.imagesInvalid")
+          ),
+      }),
+    [language, t]
+  );
+
   const form = useForm<PlaceFormData>({
     resolver: zodResolver(placeSchema),
     defaultValues: {
@@ -74,7 +107,7 @@ export default function ManagePlacesPage() {
       latitude: 0,
       longitude: 0,
       location: "",
-      imageUrl: "",
+      imageUrlsText: "",
     },
   });
 
@@ -106,7 +139,7 @@ export default function ManagePlacesPage() {
           const resolvedPlace = placeToEdit ?? fallbackPlace ?? null;
 
           if (!resolvedPlace) {
-            toast.error("Lieu introuvable");
+            toast.error(t("manage.notFound"));
             return;
           }
 
@@ -119,12 +152,12 @@ export default function ManagePlacesPage() {
             latitude: resolvedPlace.latitude ?? 0,
             longitude: resolvedPlace.longitude ?? 0,
             location: resolvedPlace.location ?? `${resolvedPlace.city}, ${resolvedPlace.country}`,
-            imageUrl: resolvedPlace.image || "",
+            imageUrlsText: formatImageUrlsText(resolvedPlace.gallery, resolvedPlace.image),
           });
         }
       } catch (error) {
         console.error("Erreur lors du chargement des lieux:", error);
-        toast.error("Erreur lors du chargement des lieux");
+        toast.error(t("manage.loadError"));
       } finally {
         setLoading(false);
       }
@@ -138,6 +171,7 @@ export default function ManagePlacesPage() {
     const isEditMode = Boolean(placeIdToUpdate);
     const payload = {
       ...data,
+      imageUrls: parseImageUrlsText(data.imageUrlsText),
       amenityIds: selectedAmenityIds,
     };
 
@@ -147,9 +181,9 @@ export default function ManagePlacesPage() {
         : await createPlace(payload);
 
       if (isEditMode) {
-        toast.success("Lieu mis à jour avec succès");
+        toast.success(t("manage.updateSuccess"));
       } else {
-        toast.success("Lieu créé avec succès");
+        toast.success(t("manage.createSuccess"));
       }
 
       const currentUser = await getCurrentUser();
@@ -169,7 +203,7 @@ export default function ManagePlacesPage() {
           latitude: refreshedPlace.latitude ?? 0,
           longitude: refreshedPlace.longitude ?? 0,
           location: refreshedPlace.location ?? `${refreshedPlace.city}, ${refreshedPlace.country}`,
-          imageUrl: refreshedPlace.image || "",
+          imageUrlsText: formatImageUrlsText(refreshedPlace.gallery, refreshedPlace.image),
         });
       }
 
@@ -180,8 +214,8 @@ export default function ManagePlacesPage() {
         error instanceof Error && error.message
           ? error.message
           : isEditMode
-            ? "Erreur lors de la mise à jour du lieu"
-            : "Erreur lors de la création du lieu";
+            ? t("manage.updateError")
+            : t("manage.createError");
       toast.error(
         errorMessage
       );
@@ -192,25 +226,25 @@ export default function ManagePlacesPage() {
     const trimmedName = amenityName.trim();
 
     if (!trimmedName) {
-      toast.error("Le nom de l'amenity est obligatoire");
+      toast.error(t("manage.amenityNameRequired"));
       return;
     }
 
     try {
       if (activeAmenity) {
         await updateAmenity(activeAmenity.id, { name: trimmedName });
-        toast.success("Amenity mise à jour");
+        toast.success(t("manage.amenityUpdateSuccess"));
       } else {
         const createdAmenity = await createAmenity({ name: trimmedName });
         setSelectedAmenityIds((current) => Array.from(new Set([...current, createdAmenity.id])));
-        toast.success("Amenity créée");
+        toast.success(t("manage.amenityCreateSuccess"));
       }
 
       setAmenityName("");
       setActiveAmenity(null);
       setAmenities(await getAmenities());
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Impossible de sauvegarder l'amenity";
+      const message = error instanceof Error ? error.message : t("manage.amenitySaveError");
       toast.error(message);
     }
   };
@@ -235,10 +269,10 @@ export default function ManagePlacesPage() {
         setActiveAmenity(null);
         setAmenityName("");
       }
-      toast.success("Amenity supprimée");
+      toast.success(t("manage.amenityDeleteSuccess"));
       setAmenities(await getAmenities());
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Impossible de supprimer l'amenity";
+      const message = error instanceof Error ? error.message : t("manage.amenityDeleteError");
       toast.error(message);
     }
   };
@@ -255,7 +289,7 @@ export default function ManagePlacesPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Chargement...</p>
+        <p>{t("manage.loading")}</p>
       </div>
     );
   }
@@ -267,7 +301,7 @@ export default function ManagePlacesPage() {
         <div className="md:col-span-2">
           <Card className="p-6">
             <h1 className="text-3xl font-bold mb-6">
-              {activePlace ? "Modifier le lieu" : "Créer un nouveau lieu"}
+              {activePlace ? t("manage.editTitle") : t("manage.createTitle")}
             </h1>
 
             <Form {...form}>
@@ -277,10 +311,10 @@ export default function ManagePlacesPage() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Titre</FormLabel>
+                        <FormLabel>{t("manage.field.title")}</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Nom du lieu"
+                            placeholder={t("manage.field.titlePlaceholder")}
                           {...field}
                           className="bg-white dark:bg-slate-950"
                         />
@@ -295,10 +329,10 @@ export default function ManagePlacesPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                        <FormLabel>{t("manage.field.description")}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Décrivez votre lieu..."
+                            placeholder={t("manage.field.descriptionPlaceholder")}
                           {...field}
                           className="bg-white dark:bg-slate-950"
                           rows={4}
@@ -314,7 +348,7 @@ export default function ManagePlacesPage() {
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Prix par nuit (€)</FormLabel>
+                        <FormLabel>{t("manage.field.price")}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -334,11 +368,11 @@ export default function ManagePlacesPage() {
                     name="latitude"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Latitude</FormLabel>
+                        <FormLabel>{t("manage.field.latitude")}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
-                            placeholder="-90 à 90"
+                            placeholder={t("manage.field.latitudePlaceholder")}
                             step="0.0001"
                             {...field}
                             className="bg-white dark:bg-slate-950"
@@ -354,11 +388,11 @@ export default function ManagePlacesPage() {
                     name="longitude"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Longitude</FormLabel>
+                        <FormLabel>{t("manage.field.longitude")}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
-                            placeholder="-180 à 180"
+                            placeholder={t("manage.field.longitudePlaceholder")}
                             step="0.0001"
                             {...field}
                             className="bg-white dark:bg-slate-950"
@@ -375,10 +409,10 @@ export default function ManagePlacesPage() {
                   name="location"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Lieu (Ville, Pays)</FormLabel>
+                        <FormLabel>{t("manage.field.location")}</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="ex: Paris, France"
+                            placeholder={t("manage.field.locationPlaceholder")}
                           {...field}
                           className="bg-white dark:bg-slate-950"
                         />
@@ -390,13 +424,14 @@ export default function ManagePlacesPage() {
 
                 <FormField
                   control={form.control}
-                  name="imageUrl"
+                  name="imageUrlsText"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL de l&apos;image</FormLabel>
+                        <FormLabel>{t("manage.field.images")}</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="https://..."
+                        <Textarea
+                          rows={4}
+                          placeholder={t("manage.field.imagesPlaceholder")}
                           {...field}
                           className="bg-white dark:bg-slate-950"
                         />
@@ -408,15 +443,15 @@ export default function ManagePlacesPage() {
 
                 <div className="rounded-2xl border border-border bg-muted/20 p-5 space-y-4">
                   <div>
-                    <h2 className="text-lg font-semibold">Amenities du lieu</h2>
+                    <h2 className="text-lg font-semibold">{t("manage.amenities.title")}</h2>
                     <p className="text-sm text-muted-foreground">
-                      Sélectionne les amenities à associer à cette place.
+                      {t("manage.amenities.description")}
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     <Input
-                      placeholder="Nom de l'amenity"
+                      placeholder={t("manage.amenities.namePlaceholder")}
                       value={amenityName}
                       onChange={(event) => setAmenityName(event.target.value)}
                       className="bg-white dark:bg-slate-950"
@@ -424,11 +459,11 @@ export default function ManagePlacesPage() {
 
                     <div className="flex gap-2">
                       <Button className="flex-1" onClick={handleSaveAmenity} type="button">
-                        {activeAmenity ? "Mettre à jour" : "Créer une amenity"}
+                        {activeAmenity ? t("manage.amenities.update") : t("manage.amenities.create")}
                       </Button>
                       {activeAmenity && (
                         <Button onClick={handleCancelAmenity} type="button" variant="outline">
-                          Annuler
+                          {t("manage.cancel")}
                         </Button>
                       )}
                     </div>
@@ -455,13 +490,13 @@ export default function ManagePlacesPage() {
                         );
                       })
                     ) : (
-                      <p className="text-sm text-muted-foreground">Aucune amenity disponible pour le moment.</p>
+                      <p className="text-sm text-muted-foreground">{t("manage.amenities.noneAvailable")}</p>
                     )}
                   </div>
 
                   {selectedAmenityIds.length > 0 && (
                     <div>
-                      <p className="mb-2 text-sm font-medium text-muted-foreground">Amenities sélectionnées</p>
+                      <p className="mb-2 text-sm font-medium text-muted-foreground">{t("manage.amenities.selected")}</p>
                       <div className="flex flex-wrap gap-2">
                         {selectedAmenityIds.map((amenityId) => {
                           const amenity = amenities.find((item) => item.id === amenityId);
@@ -488,7 +523,7 @@ export default function ManagePlacesPage() {
                   )}
 
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-muted-foreground">Gérer les amenities existantes</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("manage.amenities.manageExisting")}</p>
                     {amenities.length > 0 ? (
                       <div className="space-y-2">
                         {amenities.map((amenity) => (
@@ -496,17 +531,17 @@ export default function ManagePlacesPage() {
                             <span className="text-sm font-medium">{amenity.name}</span>
                             <div className="flex gap-2">
                               <Button onClick={() => handleEditAmenity(amenity)} size="sm" type="button" variant="outline">
-                                Modifier
+                                {t("manage.edit")}
                               </Button>
                               <Button onClick={() => handleDeleteAmenity(amenity.id)} size="sm" type="button" variant="outline" className="text-red-600">
-                                Supprimer
+                                {t("manage.delete")}
                               </Button>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">Aucune amenity enregistrée.</p>
+                      <p className="text-sm text-muted-foreground">{t("manage.amenities.noneSaved")}</p>
                     )}
                   </div>
                 </div>
@@ -518,10 +553,10 @@ export default function ManagePlacesPage() {
                     className="flex-1"
                   >
                     {form.formState.isSubmitting
-                      ? "Chargement..."
+                      ? t("manage.submitting")
                       : activePlace
-                        ? "Mettre à jour"
-                        : "Créer le lieu"}
+                        ? t("manage.submitUpdate")
+                        : t("manage.submitCreate")}
                   </Button>
                   {activePlace && (
                     <Button
@@ -533,7 +568,7 @@ export default function ManagePlacesPage() {
                         router.push("/places/manage");
                       }}
                     >
-                      Annuler
+                      {t("manage.cancel")}
                     </Button>
                   )}
                 </div>
@@ -545,11 +580,11 @@ export default function ManagePlacesPage() {
         {/* Sidebar - User's Places */}
         <div>
           <Card className="p-6 sticky top-20">
-            <h2 className="text-xl font-bold mb-6">Mes lieux ({places.length})</h2>
+            <h2 className="text-xl font-bold mb-6">{t("manage.myPlaces")} ({places.length})</h2>
 
             {places.length === 0 ? (
               <p className="text-muted-foreground text-sm">
-                Vous n&apos;avez pas encore créé de lieu.
+                {t("manage.noPlaces")}
               </p>
             ) : (
               <div className="space-y-4">
@@ -576,7 +611,7 @@ export default function ManagePlacesPage() {
                         <span>{place.location ?? `${place.city}, ${place.country}`}</span>
                       </div>
                       <p className="text-sm font-semibold mt-2">
-                        €{place.price}/nuit
+                        €{place.price}{t("manage.perNight")}
                       </p>
                       <Button
                         variant="outline"
@@ -585,7 +620,7 @@ export default function ManagePlacesPage() {
                         onClick={() => handleEditPlace(place)}
                       >
                         <Edit2 className="h-3 w-3 mr-1" />
-                        Modifier
+                        {t("manage.edit")}
                       </Button>
                     </div>
                   </div>

@@ -14,20 +14,26 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { getCurrentUser, updateCurrentUser } from "@/lib/api";
 import { getUserInfo, hasToken, setUserInfo } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { dispatchAuthChange } from "@/lib/useAuth";
 
-const profileSchema = z.object({
-  firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
-  lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  email: z.string().email("Veuillez saisir une adresse email valide"),
-  password: z.string().optional(),
-});
-
-type ProfileValues = z.infer<typeof profileSchema>;
+type ProfileValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const { t, language } = useI18n();
+  const profileSchema = z.object({
+    firstName: z.string().min(2, t("validation.firstNameMin")),
+    lastName: z.string().min(2, t("validation.lastNameMin")),
+    email: z.string().email(t("validation.email")),
+    password: z.string().optional(),
+  });
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -56,7 +62,7 @@ export default function ProfilePage() {
           password: "",
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Impossible de charger votre profil";
+        const message = error instanceof Error ? error.message : t("profile.loadFailure");
         toast.error(message);
       } finally {
         setLoading(false);
@@ -64,7 +70,7 @@ export default function ProfilePage() {
     };
 
     void loadProfile();
-  }, [form, router]);
+  }, [form, router, t, language]);
 
   const onSubmit = async (values: ProfileValues) => {
     try {
@@ -83,9 +89,9 @@ export default function ProfilePage() {
         updated.is_admin ?? existing.isAdmin
       );
       dispatchAuthChange();
-      toast.success("Profil mis à jour");
+      toast.success(t("profile.success"));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Impossible de mettre à jour le profil";
+      const message = error instanceof Error ? error.message : t("profile.failure");
       toast.error(message);
     }
   };
@@ -94,23 +100,23 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Compte</p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight">Mon profil</h1>
-          <p className="mt-3 text-muted-foreground">Consultez et mettez à jour vos informations personnelles.</p>
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">{t("profile.account")}</p>
+          <h1 className="mt-2 text-4xl font-semibold tracking-tight">{t("profile.title")}</h1>
+          <p className="mt-3 text-muted-foreground">{t("profile.description")}</p>
         </div>
         <Button asChild variant="outline">
-          <Link href="/places/manage">Gérer mes lieux</Link>
+          <Link href="/places/manage">{t("profile.managePlaces")}</Link>
         </Button>
       </div>
 
       <Card className="border-border/70 bg-card/80 shadow-xl shadow-black/5">
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl">Informations personnelles</CardTitle>
-          <CardDescription>Modifiez votre prénom, votre nom, votre email ou votre mot de passe.</CardDescription>
+          <CardTitle className="text-2xl">{t("profile.personalInfo")}</CardTitle>
+          <CardDescription>{t("profile.personalInfoDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Chargement du profil...</p>
+            <p className="text-sm text-muted-foreground">{t("profile.loading")}</p>
           ) : (
             <Form {...form}>
               <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
@@ -120,9 +126,9 @@ export default function ProfilePage() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Prénom</FormLabel>
+                        <FormLabel>{t("profile.firstName")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Jean" {...field} />
+                          <Input placeholder={t("profile.placeholderFirstName")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -134,9 +140,9 @@ export default function ProfilePage() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nom</FormLabel>
+                        <FormLabel>{t("profile.lastName")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Dupont" {...field} />
+                          <Input placeholder={t("profile.placeholderLastName")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -149,9 +155,9 @@ export default function ProfilePage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("profile.email")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="vous@hbnb.com" type="email" {...field} />
+                        <Input placeholder={t("profile.placeholderEmail")} type="email" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -163,9 +169,9 @@ export default function ProfilePage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nouveau mot de passe</FormLabel>
+                      <FormLabel>{t("profile.newPassword")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Laisser vide si inchangé" type="password" {...field} />
+                        <Input placeholder={t("profile.placeholderPassword")} type="password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -173,7 +179,7 @@ export default function ProfilePage() {
                 />
 
                 <Button className="w-full sm:w-auto" type="submit">
-                  Mettre à jour mon profil
+                  {t("profile.update")}
                 </Button>
               </form>
             </Form>

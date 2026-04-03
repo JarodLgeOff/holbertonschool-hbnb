@@ -18,7 +18,7 @@ class Place(BaseModel):
     # SQLAlchemy columns
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500))
-    image_url = db.Column(db.String(500))
+    image_url = db.Column(db.Text)
     location = db.Column(db.String(255))
     price = db.Column(db.Float, nullable=False)
     latitude = db.Column(db.Float, nullable=False)
@@ -85,8 +85,8 @@ class Place(BaseModel):
 
         if image_url and not isinstance(image_url, str):
             raise ValueError("Image URL must be a string")
-        if image_url and len(image_url.strip()) > 500:
-            raise ValueError("Image URL must not exceed 500 characters")
+        if image_url and len(image_url.strip()) > 10000:
+            raise ValueError("Image URL must not exceed 10000 characters")
 
         if location and not isinstance(location, str):
             raise ValueError("Location must be a string")

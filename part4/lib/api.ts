@@ -50,7 +50,8 @@ export type PlacePayload = {
   price: number;
   latitude: number;
   longitude: number;
-  imageUrl: string;
+  imageUrl?: string;
+  imageUrls?: string[];
   location: string;
   amenityIds?: string[];
 };
@@ -172,6 +173,68 @@ function getPlaceImage(seed: string, variant = 1) {
   return `https://picsum.photos/seed/hbnb-${seed}-${variant}/1200/800`;
 }
 
+const MULTI_IMAGE_PREFIX = "json:";
+
+function decodeImageUrls(imageUrl: string | undefined, placeId: string) {
+  const fallback = getPlaceImage(placeId, 1);
+
+  if (!imageUrl) {
+    return [fallback];
+  }
+
+  const raw = imageUrl.trim();
+
+  if (!raw) {
+    return [fallback];
+  }
+
+  const parseJsonArray = (value: string) => {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean);
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  if (raw.startsWith(MULTI_IMAGE_PREFIX)) {
+    const parsed = parseJsonArray(raw.slice(MULTI_IMAGE_PREFIX.length));
+    if (parsed && parsed.length > 0) {
+      return parsed;
+    }
+  }
+
+  if (raw.startsWith("[")) {
+    const parsed = parseJsonArray(raw);
+    if (parsed && parsed.length > 0) {
+      return parsed;
+    }
+  }
+
+  return [raw];
+}
+
+function encodeImageUrls(imageUrls?: string[], imageUrl?: string) {
+  const normalized = (imageUrls ?? [])
+    .map((url) => url.trim())
+    .filter(Boolean);
+
+  if (normalized.length === 0) {
+    return (imageUrl ?? "").trim();
+  }
+
+  if (normalized.length === 1) {
+    return normalized[0];
+  }
+
+  return `${MULTI_IMAGE_PREFIX}${JSON.stringify(normalized)}`;
+}
+
 function formatCoordinates(
   latitude?: number,
   longitude?: number,
@@ -272,7 +335,8 @@ function mapPlaceFromList(place: BackendPlaceListItem, amenitiesById?: Map<strin
   const coords = formatCoordinates(place.latitude, place.longitude, place.city, place.country, place.location);
   const amenityIds = (place.amenities ?? []).filter((amenity): amenity is string => typeof amenity === "string");
   const amenityNames = amenityIds.map((amenityId) => amenitiesById?.get(amenityId) ?? amenityId);
-  const image = place.image_url || getPlaceImage(place.id, 1);
+  const gallery = decodeImageUrls(place.image_url, place.id);
+  const image = gallery[0] || getPlaceImage(place.id, 1);
 
   return {
     id: place.id,
@@ -286,7 +350,7 @@ function mapPlaceFromList(place: BackendPlaceListItem, amenitiesById?: Map<strin
     amenities: amenityNames.slice(0, 4),
     amenityIds,
     image,
-    gallery: [image, image, image],
+    gallery,
     rating: 0,
     reviews: [],
     latitude: place.latitude,
@@ -303,7 +367,8 @@ function mapPlaceFromDetails(place: BackendPlaceDetails, reviews: BackendReview[
     : 0;
   const amenityIds = (place.amenities ?? []).map((amenity) => amenity.id);
   const amenityNames = (place.amenities ?? []).map((amenity) => amenity.name);
-  const image = place.image_url || getPlaceImage(place.id, 1);
+  const gallery = decodeImageUrls(place.image_url, place.id);
+  const image = gallery[0] || getPlaceImage(place.id, 1);
 
   return {
     id: place.id,
@@ -317,7 +382,7 @@ function mapPlaceFromDetails(place: BackendPlaceDetails, reviews: BackendReview[
     amenities: amenityNames,
     amenityIds,
     image,
-    gallery: [image, image, image],
+    gallery,
     rating: averageRating,
     reviews: mappedReviews,
     latitude: place.latitude,
@@ -532,7 +597,7 @@ export async function createPlace(payload: PlacePayload) {
       price: Number(payload.price),
       latitude: Number(payload.latitude),
       longitude: Number(payload.longitude),
-      image_url: payload.imageUrl,
+      image_url: encodeImageUrls(payload.imageUrls, payload.imageUrl),
       location: payload.location,
       amenities: payload.amenityIds ?? [],
       owner_id: user.id,
@@ -559,7 +624,7 @@ export async function updatePlace(placeId: string, payload: PlacePayload) {
     price: Number(payload.price),
     latitude: Number(payload.latitude),
     longitude: Number(payload.longitude),
-    image_url: payload.imageUrl,
+    image_url: encodeImageUrls(payload.imageUrls, payload.imageUrl),
     location: payload.location,
     amenities: payload.amenityIds ?? [],
     owner_id: user.id,
