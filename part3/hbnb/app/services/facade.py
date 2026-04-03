@@ -45,11 +45,32 @@ class HBnBFacade:
         for key, value in user_data.items():
             if key not in ['id', 'created_at', 'updated_at']:
                 setattr(user, key, value)
+        user.save()
         return user
+
+    def delete_user(self, user_id):
+        """Delete a user and related content safely"""
+        user = self.user_repo.get(user_id)
+        if not user:
+            return False
+
+        for review in list(self.review_repo.get_all()):
+            if review.user_id == user_id:
+                self.review_repo.delete(review.id)
+
+        for place in list(self.place_repo.get_all()):
+            if place.owner_id == user_id:
+                self.place_repo.delete(place.id)
+
+        self.user_repo.delete(user_id)
+        return True
 
     # ===== PLACE METHODS =====
 
     def create_place(self, place_data):
+        if "images_url" in place_data and "image_url" not in place_data:
+            place_data["image_url"] = place_data.pop("images_url")
+
         amenity_ids = place_data.pop("amenities", [])
 
         print("USER REPO CONTENT:", self.user_repo.get_all())
@@ -76,6 +97,15 @@ class HBnBFacade:
     def get_all_places(self):
         return self.place_repo.get_all()
 
+    def delete_place(self, place_id):
+        """Delete a place"""
+        place = self.place_repo.get(place_id)
+        if not place:
+            return False
+
+        self.place_repo.delete(place_id)
+        return True
+
     def update_place(self, place_id, place_data):
         """Update a place with proper validation"""
         place = self.place_repo.get(place_id)
@@ -90,22 +120,32 @@ class HBnBFacade:
         current_data = {
             'title': place.title,
             'description': place.description,
+            'image_url': place.image_url,
+            'location': place.location,
             'price': place.price,
             'latitude': place.latitude,
             'longitude': place.longitude,
             'owner_id': place.owner_id
         }
 
+        if 'images_url' in place_data and 'image_url' not in place_data:
+            place_data['image_url'] = place_data.pop('images_url')
+
         # Update with new data
         for key, value in place_data.items():
-            if key in ['title', 'description', 'price', 'latitude', 'longitude', 'owner_id']:
+            if key in [
+                'title', 'description', 'image_url', 'location',
+                'price', 'latitude', 'longitude', 'owner_id'
+            ]:
                 current_data[key] = value
 
         # Validate the updated data by creating a temporary Place instance
         try:
             temp_place = Place(
                 title=current_data['title'],
-                description=current_data['description'], 
+                description=current_data['description'],
+                image_url=current_data['image_url'],
+                location=current_data['location'],
                 price=current_data['price'],
                 latitude=current_data['latitude'],
                 longitude=current_data['longitude'],
@@ -115,6 +155,8 @@ class HBnBFacade:
             # If validation passed, update the existing place
             place.title = temp_place.title
             place.description = temp_place.description
+            place.image_url = temp_place.image_url
+            place.location = temp_place.location
             place.price = temp_place.price
             place.latitude = temp_place.latitude
             place.longitude = temp_place.longitude
@@ -129,8 +171,13 @@ class HBnBFacade:
                     if amenity:
                         amenities.append(amenity)
                     else:
-                        raise ValueError(f"Amenity with ID {amenity_id} not found")
+                        raise ValueError(
+                            f"Amenity with ID {amenity_id} not found"
+                        )
                 place.amenities = amenities
+
+            # Persist changes to database.
+            place.save()
 
         except (ValueError, TypeError) as e:
             # Re-raise validation errors to be caught by API layer
@@ -220,6 +267,7 @@ class HBnBFacade:
             review.place_id = temp_review.place_id
             review.user_id = temp_review.user_id
             review.updated_at = datetime.now()
+            review.save()
 
         except (ValueError, TypeError) as e:
             # Re-raise validation errors to be caught by API layer
@@ -281,4 +329,21 @@ class HBnBFacade:
                 raise e
         else:
             raise ValueError("Name field is required for amenity update")
+
+        amenity.save()
         return amenity
+
+    def delete_amenity(self, amenity_id):
+        """Delete an amenity"""
+        amenity = self.amenity_repo.get(amenity_id)
+
+        if not amenity:
+            return False
+
+        for place in list(self.place_repo.get_all()):
+            if amenity in place.amenities:
+                place.amenities.remove(amenity)
+                place.save()
+
+        self.amenity_repo.delete(amenity_id)
+        return True

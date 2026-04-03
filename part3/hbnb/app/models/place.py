@@ -18,6 +18,8 @@ class Place(BaseModel):
     # SQLAlchemy columns
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500))
+    image_url = db.Column(db.String(500))
+    location = db.Column(db.String(255))
     price = db.Column(db.Float, nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
@@ -29,7 +31,17 @@ class Place(BaseModel):
     amenities = db.relationship('Amenity', secondary=place_amenity, lazy='subquery',
                                 backref=db.backref('places', lazy=True))
 
-    def __init__(self, title, price, latitude, longitude, owner_id, description=''):
+    def __init__(
+        self,
+        title,
+        price,
+        latitude,
+        longitude,
+        owner_id,
+        description='',
+        image_url='',
+        location=''
+    ):
         """Initialize a new Place instance
         
         Args:
@@ -39,6 +51,8 @@ class Place(BaseModel):
             longitude: Longitude coordinate
             owner_id: ID of the place owner
             description: Optional description of the place
+            image_url: Optional image URL of the place
+            location: Optional location label/address of the place
         """
         # Validations
         if not isinstance(title, str) or not title.strip():
@@ -69,9 +83,21 @@ class Place(BaseModel):
         if description and len(description.strip()) > 500:
             raise ValueError("Description must not exceed 500 characters")
 
+        if image_url and not isinstance(image_url, str):
+            raise ValueError("Image URL must be a string")
+        if image_url and len(image_url.strip()) > 500:
+            raise ValueError("Image URL must not exceed 500 characters")
+
+        if location and not isinstance(location, str):
+            raise ValueError("Location must be a string")
+        if location and len(location.strip()) > 255:
+            raise ValueError("Location must not exceed 255 characters")
+
         # Set attributes
         self.title = title.strip()
         self.description = description.strip() if description else ""
+        self.image_url = image_url.strip() if image_url else ""
+        self.location = location.strip() if location else ""
         self.price = float(price)
         self.latitude = float(latitude)
         self.longitude = float(longitude)
@@ -105,6 +131,8 @@ class Place(BaseModel):
             "id": self.id,
             "title": self.title,
             "description": self.description,
+            "image_url": self.image_url,
+            "location": self.location,
             "price": self.price,
             "latitude": self.latitude,
             "longitude": self.longitude,

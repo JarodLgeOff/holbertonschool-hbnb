@@ -28,6 +28,8 @@ CREATE TABLE places (
     id CHAR(36) PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     description VARCHAR(500),
+    image_url VARCHAR(500),
+    location VARCHAR(255),
     price FLOAT NOT NULL,
     latitude FLOAT NOT NULL,
     longitude FLOAT NOT NULL,

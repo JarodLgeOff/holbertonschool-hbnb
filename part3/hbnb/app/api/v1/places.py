@@ -21,11 +21,23 @@ user_model = api.model('PlaceUser', {
 place_model = api.model('Place', {
     'title': fields.String(required=True, description='Title of the place'),
     'description': fields.String(description='Description of the place'),
+    'image_url': fields.String(description='Image URL of the place'),
+    'location': fields.String(description='Location/address of the place'),
     'price': fields.Float(required=True, description='Price per night'),
-    'latitude': fields.Float(required=True, description='Latitude of the place'),
-    'longitude': fields.Float(required=True, description='Longitude of the place'),
+    'latitude': fields.Float(
+        required=True,
+        description='Latitude of the place'
+    ),
+    'longitude': fields.Float(
+        required=True,
+        description='Longitude of the place'
+    ),
     'owner_id': fields.String(required=True, description='ID of the owner'),
-    'amenities': fields.List(fields.String, required=True, description="List of amenities ID's")
+    'amenities': fields.List(
+        fields.String,
+        required=True,
+        description="List of amenities ID's"
+    )
 })
 
 
@@ -38,11 +50,15 @@ class PlaceList(Resource):
         """Register a new place"""
         try:
             data = request.get_json()
+            if data and 'images_url' in data and 'image_url' not in data:
+                data['image_url'] = data.pop('images_url')
             new_place = facade.create_place(data)
             return {
                 "id": new_place.id,
                 "title": new_place.title,
                 "description": new_place.description,
+                "image_url": new_place.image_url,
+                "location": new_place.location,
                 "price": new_place.price,
                 "latitude": new_place.latitude,
                 "longitude": new_place.longitude,
@@ -60,6 +76,8 @@ class PlaceList(Resource):
             "id": place.id,
             "title": place.title,
             "description": place.description,
+            "image_url": place.image_url,
+            "location": place.location,
             "price": place.price,
             "latitude": place.latitude,
             "longitude": place.longitude,
@@ -81,6 +99,8 @@ class PlaceResource(Resource):
             "id": place.id,
             "title": place.title,
             "description": place.description,
+            "image_url": place.image_url,
+            "location": place.location,
             "price": place.price,
             "latitude": place.latitude,
             "longitude": place.longitude,
@@ -106,6 +126,8 @@ class PlaceResource(Resource):
         """Update a place's information"""
         try:
             data = request.get_json()
+            if data and 'images_url' in data and 'image_url' not in data:
+                data['image_url'] = data.pop('images_url')
             updated_place = facade.update_place(place_id, data)
             if not updated_place:
                 return {"error": "Place not found"}, 404
@@ -113,11 +135,15 @@ class PlaceResource(Resource):
                 "id": updated_place.id,
                 "title": updated_place.title,
                 "description": updated_place.description,
+                "image_url": updated_place.image_url,
+                "location": updated_place.location,
                 "price": updated_place.price,
                 "latitude": updated_place.latitude,
                 "longitude": updated_place.longitude,
                 "owner_id": updated_place.owner_id,
-                "amenities": [amenity.id for amenity in updated_place.amenities],
+                "amenities": [
+                    amenity.id for amenity in updated_place.amenities
+                ],
                 "created_at": updated_place.created_at.isoformat(),
                 "updated_at": updated_place.updated_at.isoformat()
             }, 200
@@ -125,6 +151,18 @@ class PlaceResource(Resource):
             return {"error": str(e)}, 400
         except Exception as e:
             return {"error": "Internal server error"}, 500
+
+    @api.response(200, 'Place deleted successfully')
+    @api.response(404, 'Place not found')
+    def delete(self, place_id):
+        """Delete a place"""
+        try:
+            result = facade.delete_place(place_id)
+            if not result:
+                return {'error': 'Place not found'}, 404
+            return {'message': 'Place successfully deleted'}, 200
+        except Exception:
+            return {'error': 'Internal server error'}, 500
 
 
 @api.route('/<place_id>/reviews')

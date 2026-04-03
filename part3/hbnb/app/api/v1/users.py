@@ -10,6 +10,14 @@ user_model = api.model('User', {
     'password': fields.String(required=True, description='Password of the user')
 })
 
+user_update_model = api.model('UserUpdate', {
+    'first_name': fields.String(description='First name of the user'),
+    'last_name': fields.String(description='Last name of the user'),
+    'email': fields.String(description='Email of the user'),
+    'password': fields.String(description='Password of the user'),
+    'is_admin': fields.Boolean(description='Admin flag')
+})
+
 
 @api.route('/')
 class UserList(Resource):
@@ -50,7 +58,8 @@ class UserList(Resource):
             'id': user.id,
             'first_name': user.first_name,
             'last_name': user.last_name,
-            'email': user.email
+            'email': user.email,
+            'is_admin': user.is_admin
         } for user in users], 200
 
 
@@ -69,10 +78,11 @@ class UserResource(Resource):
             'id': user.id,
             'first_name': user.first_name,
             'last_name': user.last_name,
-            'email': user.email
+            'email': user.email,
+            'is_admin': user.is_admin
             }, 200
 
-    @api.expect(user_model, validate=True)
+    @api.expect(user_update_model, validate=True)
     @api.response(200, 'User updated successfully')
     @api.response(400, 'Email already registered')
     @api.response(404, 'User not found')
@@ -136,9 +146,7 @@ class UserResource(Resource):
     @api.response(404, 'User not found')
     def delete(self, user_id):
         """Delete a user by ID"""
-        user = facade.get_user(user_id)
-
-        if not user:
+        if not facade.delete_user(user_id):
             return {'error': 'User not found'}, 404
 
-        return facade.user_repo.delete(user_id), 204
+        return '', 204
